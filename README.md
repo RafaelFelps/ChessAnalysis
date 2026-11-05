@@ -19,11 +19,14 @@ Abra http://localhost:5173, digite seu nick do chess.com, escolha a partida e ag
 ## O que ela faz
 
 - Busca suas partidas pela API pública do chess.com (filtro por ritmo, carrega meses mais antigos).
-- Analisa cada posição com o **Stockfish 17.1** rodando no navegador (WebAssembly).
+- Analisa cada posição com o **Stockfish 19** rodando no navegador (WebAssembly), com opção de voltar ao 17.1.
 - Classifica cada lance: Brilhante, Ótimo lance, Melhor, Excelente, Bom, Forçado, Imprecisão, Erro, Chance perdida e Capivarada.
 - Calcula a precisão de cada jogador (no geral e por fase: abertura, meio-jogo e final).
 - Gera um resumo com o ponto de virada, onde você errou, o que fez bem, dicas de treino e momentos-chave clicáveis.
 - Usa o relógio do PGN para detectar erros com pouco tempo, lances impulsivos e derrotas por tempo.
+- Aba **Lances** com todos os lances, o ícone de cada peça e quanto tempo cada um levou.
+- Estima o rating de cada jogador pela precisão da partida, partindo do rating real.
+- Botão **Analisar novamente** para refazer a análise com outro motor ou profundidade.
 
 ## Como os lances são classificados
 
@@ -38,7 +41,13 @@ A avaliação do motor é convertida em chance de vitória (0–100%). A perda d
 | < 20%   | Erro        |
 | ≥ 20%   | Capivarada  |
 
-- **Brilhante**: lance bom (perda ≤ 2%) que sacrifica material sem deixar a posição perdida.
+- **Brilhante**: o melhor lance (perda ≤ 1%, não forçado) que sacrifica de verdade uma peça (não só peões) e tem uma ideia por trás. Todos os critérios abaixo precisam valer:
+  - o material fica 2+ pontos abaixo mesmo depois da resposta do adversário e do seu lance seguinte, ou a peça fica oferecida e o motor confirma que capturá-la é um erro;
+  - não é uma troca nem uma peça que já estava perdida (desperado);
+  - era necessário: a melhor alternativa segura é bem pior (≥ 5%) ou o sacrifício força mate;
+  - a posição não estava já totalmente ganha (> 90%), a não ser que o sacrifício leve a um mate mais rápido, e não fica perdida depois.
+
+  A ferramenta mostra a ideia do sacrifício e a linha do motor que o justifica.
 - **Ótimo lance**: o melhor lance quando a 2ª opção é muito pior (≥ 15%), ou seja, o único lance bom.
 - **Chance perdida**: o adversário errou e você não aproveitou (perda ≥ 10%).
 
@@ -47,7 +56,7 @@ A avaliação do motor é convertida em chance de vitória (0–100%). A perda d
 - **Animação** das peças com velocidade configurável no topo (Desligada, Rápida, Normal, Lenta, Muito lenta).
 - **Setas**: botão direito + arrastar de uma casa a outra. Botão direito numa casa a marca com um círculo. Repetir remove.
 - **Cores**: laranja (padrão), Shift = vermelho, Ctrl = azul, Alt = verde.
-- **Lances possíveis**: clique esquerdo numa peça mostra para onde ela pode ir. Clique esquerdo também limpa as marcações.
+- Clique esquerdo no tabuleiro limpa as marcações.
 - As marcações ficam salvas por lance enquanto a partida está aberta.
 
 ## Motores
