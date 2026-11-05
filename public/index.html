@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Análise de Partidas</title>
+  <link rel="icon" href="/pieces/wN.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="brand" id="homeBtn"><img src="/pieces/wN.svg" alt=""> Análise de Partidas</button>
+    <div class="settings">
+      <label>Profundidade
+        <select id="depthSel">
+          <option value="12">Rápida (12)</option>
+          <option value="16" selected>Normal (16)</option>
+          <option value="20">Profunda (20)</option>
+        </select>
+      </label>
+      <label>Motor
+        <select id="engineSel">
+          <option value="sf19mt" selected>Stockfish 19 · multi-thread</option>
+          <option value="sf19">Stockfish 19 · 1 thread</option>
+          <option value="sf19lite">Stockfish 19 Lite (rápido, mais fraco)</option>
+          <option value="full">Stockfish 17.1</option>
+          <option value="lite">Stockfish 17.1 Lite</option>
+        </select>
+      </label>
+      <label>Animação
+        <select id="animSel">
+          <option value="0">Desligada</option>
+          <option value="120">Rápida</option>
+          <option value="220" selected>Normal</option>
+          <option value="400">Lenta</option>
+          <option value="700">Muito lenta</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <!-- Tela 1: busca -->
+  <main id="searchView" class="view">
+    <section class="hero">
+      <h1>Descubra onde você está perdendo pontos</h1>
+      <p>Digite seu usuário do chess.com, escolha uma partida e receba a análise lance a lance com o Stockfish — brilhantes, erros, chances perdidas e onde melhorar.</p>
+      <form id="searchForm" class="search">
+        <input id="userInput" placeholder="Seu nick no chess.com" autocomplete="off" spellcheck="false" required>
+        <button type="submit" class="primary">Buscar partidas</button>
+      </form>
+      <p id="searchError" class="error" hidden></p>
+    </section>
+  </main>
+
+  <!-- Tela 2: lista de partidas -->
+  <main id="gamesView" class="view" hidden>
+    <section class="profile" id="profile"></section>
+    <div class="filters" id="filters">
+      <button data-f="all" class="chip active">Todas</button>
+      <button data-f="bullet" class="chip">Bullet</button>
+      <button data-f="blitz" class="chip">Blitz</button>
+      <button data-f="rapid" class="chip">Rápida</button>
+      <button data-f="daily" class="chip">Diária</button>
+    </div>
+    <ul class="game-list" id="gameList"></ul>
+    <div class="center"><button id="moreBtn" class="ghost" hidden>Carregar partidas mais antigas</button></div>
+    <p id="gamesStatus" class="muted center"></p>
+  </main>
+
+  <!-- Tela 3: análise -->
+  <main id="analysisView" class="view analysis" hidden>
+    <section class="board-col">
+      <div class="player-bar" id="topPlayer"></div>
+      <div class="board-wrap">
+        <div class="evalbar" id="evalBar"><div class="evalfill" id="evalFill"></div><span id="evalText"></span></div>
+        <div class="board" id="board"></div>
+      </div>
+      <div class="player-bar" id="bottomPlayer"></div>
+      <div class="controls">
+        <button id="firstBtn" title="Início (Home)">⏮</button>
+        <button id="prevBtn" title="Anterior (←)">◀</button>
+        <button id="nextBtn" title="Próximo (→)">▶</button>
+        <button id="lastBtn" title="Fim (End)">⏭</button>
+        <button id="flipBtn" title="Girar tabuleiro (F)">⇅</button>
+      </div>
+      <p class="board-hint">Botão direito + arrastar: seta · botão direito: marcar casa · Shift/Ctrl/Alt mudam a cor</p>
+    </section>
+
+    <section class="side-col">
+      <div class="side-head">
+        <button id="backBtn" class="ghost small">← Partidas</button>
+        <button id="reanalyzeBtn" class="ghost small" title="Refaz a análise com o motor e a profundidade selecionados no topo">↻ Analisar novamente</button>
+        <a id="gameLink" target="_blank" rel="noopener" class="muted small">ver no chess.com ↗</a>
+      </div>
+      <div id="progress" class="progress-card">
+        <div class="muted" id="progressText">Carregando motor…</div>
+        <div class="progress"><div id="progressFill"></div></div>
+      </div>
+      <div id="moveInfo" class="move-info" hidden></div>
+      <div class="tabs" id="tabs">
+        <button data-tab="summary" class="active">Resumo</button>
+        <button data-tab="moves">Lances</button>
+      </div>
+      <div id="summaryTab" class="tab-body"></div>
+      <div id="movesTab" class="tab-body" hidden></div>
+    </section>
+  </main>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
