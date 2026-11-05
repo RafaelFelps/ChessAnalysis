@@ -49,7 +49,14 @@ select { background: var(--panel-2); border: 1px solid var(--line); border-radiu
 .hero { max-width: 620px; margin: 10vh auto 0; text-align: center; }
 .hero h1 { font-size: clamp(26px, 4vw, 38px); line-height: 1.15; margin: 0 0 12px; }
 .hero p { color: var(--muted); }
-.search { display: flex; gap: 8px; margin-top: 24px; }
+.platforms {
+  display: inline-flex; gap: 2px; margin-top: 20px; padding: 3px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+}
+.platform { background: none; border: 0; border-radius: 999px; padding: 6px 18px; font-size: 14px; color: var(--muted); }
+.platform:hover { color: inherit; }
+.platform.active { background: var(--accent); color: #fff; font-weight: 600; }
+.search { display: flex; gap: 8px; margin-top: 14px; }
 .search input {
   flex: 1; min-width: 0; padding: 12px 14px; border-radius: var(--radius);
   background: var(--panel); border: 1px solid var(--line); font-size: 16px;

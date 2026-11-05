@@ -1,6 +1,6 @@
-# Análise de Partidas (chess.com + Stockfish)
+# Análise de Partidas (chess.com / Lichess + Stockfish)
 
-Ferramenta local para analisar suas partidas do chess.com lance a lance.
+Ferramenta local para analisar suas partidas do chess.com ou do Lichess lance a lance.
 
 ## Como usar
 
@@ -14,11 +14,12 @@ node server.js
 
 > No PowerShell, `npm start` pode falhar com "running scripts is disabled on this system". Use `npm.cmd start` ou `node server.js`.
 
-Abra http://localhost:5173, digite seu nick do chess.com, escolha a partida e aguarde a análise.
+Abra http://localhost:5173, escolha o site (chess.com ou Lichess), digite seu nick, escolha a partida e aguarde a análise.
 
 ## O que ela faz
 
-- Busca suas partidas pela API pública do chess.com (filtro por ritmo, carrega meses mais antigos).
+- Busca suas partidas pelas APIs públicas do chess.com e do Lichess (filtro por ritmo, carrega partidas mais antigas).
+- Mostra a precisão oficial do site ao lado da nossa, quando a partida já foi analisada lá.
 - Analisa cada posição com o **Stockfish 19** rodando no navegador (WebAssembly), com opção de voltar ao 17.1.
 - Classifica cada lance: Brilhante, Ótimo lance, Melhor, Excelente, Bom, Forçado, Imprecisão, Erro, Chance perdida e Capivarada.
 - Calcula a precisão de cada jogador (no geral e por fase: abertura, meio-jogo e final).

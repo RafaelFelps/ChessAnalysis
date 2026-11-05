@@ -1,4 +1,4 @@
-// Servidor local: arquivos estáticos + Stockfish/chess.js do node_modules + proxy da API pública do chess.com
+// Servidor local: arquivos estáticos + Stockfish/chess.js do node_modules + proxy das APIs públicas do chess.com e do Lichess
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -33,17 +33,15 @@ function resolveFile(urlPath) {
   return path.join(ROOT, 'public', urlPath === '/' ? 'index.html' : urlPath);
 }
 
-async function proxyChessCom(req, res, apiPath) {
+async function proxy(res, url, site, accept = 'application/json') {
   try {
-    const r = await fetch('https://api.chess.com/pub/' + apiPath, {
-      headers: { 'User-Agent': 'ChessAnalysis-local/1.0' },
-    });
+    const r = await fetch(url, { headers: { 'User-Agent': 'ChessAnalysis-local/1.0', Accept: accept } });
     const body = await r.text();
-    res.writeHead(r.status, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.writeHead(r.status, { 'Content-Type': (r.headers.get('content-type') || 'application/json') });
     res.end(body);
   } catch (e) {
     res.writeHead(502, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: 'Falha ao contatar chess.com: ' + e.message }));
+    res.end(JSON.stringify({ message: `Falha ao contatar ${site}: ` + e.message }));
   }
 }
 
@@ -51,7 +49,13 @@ http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const urlPath = decodeURIComponent(url.pathname);
 
-  if (urlPath.startsWith('/api/')) return proxyChessCom(req, res, urlPath.slice(5));
+  if (urlPath.startsWith('/api/')) return proxy(res, 'https://api.chess.com/pub/' + urlPath.slice(5), 'chess.com');
+  // Lichess: /lichess/<rota da API>?<query>; a exportação de partidas vem em NDJSON (uma partida por linha)
+  if (urlPath.startsWith('/lichess/')) {
+    const apiPath = urlPath.slice(9);
+    const accept = apiPath.startsWith('games/') ? 'application/x-ndjson' : 'application/json';
+    return proxy(res, 'https://lichess.org/api/' + encodeURI(apiPath) + url.search, 'Lichess', accept);
+  }
 
   const file = resolveFile(urlPath);
   // Impede sair das pastas permitidas

@@ -171,8 +171,8 @@ export function buildInsights(game, color, outcome) {
 function translateTermination(t) {
   const map = [
     [/checkmate/i, 'por xeque-mate'], [/resignation/i, 'por abandono'], [/on time/i, 'por tempo'],
-    [/abandoned/i, 'por abandono da partida'], [/repetition/i, 'empate por repetição'], [/agreement/i, 'empate por acordo'],
-    [/stalemate/i, 'empate por afogamento'], [/insufficient/i, 'empate por material insuficiente'], [/50/, 'empate pela regra dos 50 lances'],
+    [/abandon/i, 'por abandono da partida'], [/repetition/i, 'empate por repetição'], [/agreement/i, 'empate por acordo'],
+    [/stalemate/i, 'empate por afogamento'], [/insufficient/i, 'empate por material insuficiente'], [/50/, 'empate pela regra dos 50 lances'], [/drawn/i, 'empate'],
   ];
   const found = map.find(([re]) => re.test(t));
   if (!found) return t;

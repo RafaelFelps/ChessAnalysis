@@ -43,7 +43,11 @@
   <main id="searchView" class="view">
     <section class="hero">
       <h1>Descubra onde você está perdendo pontos</h1>
-      <p>Digite seu usuário do chess.com, escolha uma partida e receba a análise lance a lance com o Stockfish — brilhantes, erros, chances perdidas e onde melhorar.</p>
+      <p>Digite seu usuário do chess.com ou do Lichess, escolha uma partida e receba a análise lance a lance com o Stockfish — brilhantes, erros, chances perdidas e onde melhorar.</p>
+      <div class="platforms" id="platformSel" role="radiogroup" aria-label="Site">
+        <button type="button" class="platform active" data-p="chesscom" role="radio" aria-checked="true">chess.com</button>
+        <button type="button" class="platform" data-p="lichess" role="radio" aria-checked="false">Lichess</button>
+      </div>
       <form id="searchForm" class="search">
         <input id="userInput" placeholder="Seu nick no chess.com" autocomplete="off" spellcheck="false" required>
         <button type="submit" class="primary">Buscar partidas</button>
@@ -60,6 +64,7 @@
       <button data-f="bullet" class="chip">Bullet</button>
       <button data-f="blitz" class="chip">Blitz</button>
       <button data-f="rapid" class="chip">Rápida</button>
+      <button data-f="classical" class="chip" hidden>Clássica</button>
       <button data-f="daily" class="chip">Diária</button>
     </div>
     <ul class="game-list" id="gameList"></ul>

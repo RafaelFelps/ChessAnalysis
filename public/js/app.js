@@ -5,12 +5,15 @@ import { buildInsights, describeMove } from './insights.js';
 
 const $ = (id) => document.getElementById(id);
 const DRAW_RESULTS = new Set(['agreed', 'repetition', 'stalemate', 'insufficient', '50move', 'timevsinsufficient']);
-const TIME_CLASS = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rápida', daily: 'Diária' };
+const TIME_CLASS = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rápida', classical: 'Clássica', daily: 'Diária' };
+const SITE = { chesscom: 'chess.com', lichess: 'Lichess' };
 const PHASE_NAMES = { opening: 'Abertura', middlegame: 'Meio-jogo', endgame: 'Final' };
 const MIN_GAMES = 30;
 
 const state = (window.appState = {
+  platform: 'chesscom', // 'chesscom' | 'lichess'
   username: '',
+  lichessUntil: null, // paginação do Lichess: busca partidas anteriores a este instante (ms)
   archives: [],
   nextArchive: -1,
   games: [],
@@ -39,6 +42,35 @@ async function api(path) {
   return r.json();
 }
 
+// Lichess: JSON comum ou NDJSON (uma partida por linha) na exportação de partidas
+async function lichessApi(path, ndjson = false) {
+  const r = await fetch('/lichess/' + path);
+  if (r.status === 404) throw new Error('Usuário não encontrado no Lichess.');
+  if (r.status === 429) throw new Error('O Lichess limitou as consultas por um minuto. Tente de novo em instantes.');
+  if (!r.ok) throw new Error(`Erro ${r.status} ao consultar o Lichess.`);
+  if (!ndjson) return r.json();
+  return (await r.text()).split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l));
+}
+
+// ---------------- escolha do site ----------------
+function setPlatform(p) {
+  state.platform = p;
+  document.querySelectorAll('.platform').forEach((b) => {
+    b.classList.toggle('active', b.dataset.p === p);
+    b.setAttribute('aria-checked', b.dataset.p === p);
+  });
+  $('userInput').placeholder = `Seu nick no ${SITE[p]}`;
+  try {
+    localStorage.setItem('lastPlatform', p);
+    $('userInput').value = localStorage.getItem('lastUser:' + p) || '';
+  } catch {}
+}
+$('platformSel').addEventListener('click', (e) => {
+  const b = e.target.closest('.platform');
+  if (b) setPlatform(b.dataset.p);
+  $('userInput').focus();
+});
+
 // ---------------- busca de partidas ----------------
 $('searchForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -49,8 +81,8 @@ $('searchForm').addEventListener('submit', async (e) => {
   btn.textContent = 'Buscando…';
   $('searchError').hidden = true;
   try {
-    await loadPlayer(username);
-    try { localStorage.setItem('lastUser', username); } catch {}
+    await (state.platform === 'lichess' ? loadLichessPlayer(username) : loadPlayer(username));
+    try { localStorage.setItem('lastUser:' + state.platform, username); } catch {}
     show('gamesView');
   } catch (err) {
     $('searchError').textContent = err.message;
@@ -61,9 +93,17 @@ $('searchForm').addEventListener('submit', async (e) => {
   }
 });
 
+function resetGamesView() {
+  state.filter = 'all';
+  document.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c.dataset.f === 'all'));
+  // ritmo clássico só existe no Lichess
+  document.querySelector('.chip[data-f="classical"]').hidden = state.platform !== 'lichess';
+}
+
 async function loadPlayer(username) {
   const { archives } = await api(`player/${encodeURIComponent(username)}/games/archives`);
   if (!archives.length) throw new Error('Esse usuário não tem partidas públicas.');
+  resetGamesView();
   state.username = username;
   state.archives = archives.map((u) => u.split('/pub/')[1]);
   state.nextArchive = state.archives.length - 1;
@@ -73,6 +113,7 @@ async function loadPlayer(username) {
 }
 
 async function loadMoreGames() {
+  if (state.platform === 'lichess') return loadMoreLichessGames();
   $('moreBtn').hidden = true;
   $('gamesStatus').textContent = 'Carregando partidas…';
   const target = state.games.length + MIN_GAMES;
@@ -85,7 +126,96 @@ async function loadMoreGames() {
   $('moreBtn').hidden = state.nextArchive < 0;
   renderGameList();
 }
-$('moreBtn').addEventListener('click', loadMoreGames);
+$('moreBtn').addEventListener('click', () =>
+  loadMoreGames().catch((err) => ($('gamesStatus').textContent = err.message))
+);
+
+// ---------------- Lichess ----------------
+async function loadLichessPlayer(username) {
+  const user = await lichessApi(`user/${encodeURIComponent(username)}`);
+  if (user.disabled) throw new Error('Essa conta do Lichess foi encerrada.');
+  resetGamesView();
+  state.username = username;
+  state.lichessUntil = null;
+  state.nextArchive = 0; // usado só para mostrar/esconder "carregar mais"
+  state.games = [];
+  renderLichessProfile(user);
+  await loadMoreLichessGames();
+  if (!state.games.length) throw new Error('Esse usuário não tem partidas públicas.');
+}
+
+async function loadMoreLichessGames() {
+  $('moreBtn').hidden = true;
+  $('gamesStatus').textContent = 'Carregando partidas…';
+  const params = new URLSearchParams({
+    max: MIN_GAMES,
+    pgnInJson: 'true',
+    clocks: 'true',
+    opening: 'true',
+    accuracy: 'true',
+    evals: 'false',
+    perfType: 'ultraBullet,bullet,blitz,rapid,classical,correspondence',
+  });
+  if (state.lichessUntil) params.set('until', state.lichessUntil);
+  const list = await lichessApi(`games/user/${encodeURIComponent(state.username)}?${params}`, true);
+  if (list.length) state.lichessUntil = list[list.length - 1].createdAt - 1;
+  state.games.push(...list.map(normalizeLichess).filter(Boolean));
+  state.nextArchive = list.length < MIN_GAMES ? -1 : 0;
+  $('gamesStatus').textContent = state.games.length ? '' : 'Nenhuma partida encontrada.';
+  $('moreBtn').hidden = state.nextArchive < 0;
+  renderGameList();
+}
+
+const LICHESS_SPEED = { ultraBullet: 'bullet', bullet: 'bullet', blitz: 'blitz', rapid: 'rapid', classical: 'classical', correspondence: 'daily' };
+
+// Converte uma partida do Lichess para o mesmo formato das do chess.com usado no resto do app
+function normalizeLichess(g) {
+  if (g.variant !== 'standard' || !g.moves || !g.pgn || ['aborted', 'noStart', 'created', 'started'].includes(g.status)) return null;
+  const isDraw = !g.winner && ['draw', 'stalemate', 'outoftime', 'insufficientMaterialClaim'].includes(g.status);
+  const side = (color) => {
+    const p = g.players[color] || {};
+    const name = p.user ? p.user.name : p.aiLevel ? `Stockfish nível ${p.aiLevel}` : 'Anônimo';
+    return {
+      username: name,
+      rating: p.rating ?? '?',
+      result: g.winner === color ? 'win' : isDraw ? 'agreed' : 'lose',
+    };
+  };
+  const white = side('white');
+  const black = side('black');
+  const winnerName = g.winner ? (g.winner === 'white' ? white : black).username : null;
+  const how = {
+    mate: 'checkmate', resign: 'resignation', outoftime: 'on time', timeout: 'abandonment',
+    stalemate: 'stalemate', draw: 'agreement', insufficientMaterialClaim: 'insufficient material',
+  }[g.status];
+  const termination = winnerName
+    ? `${winnerName} won${how ? ' by ' + how : ''}`
+    : how === 'stalemate' ? 'Game drawn by stalemate' : how === 'insufficient material' ? 'Game drawn by insufficient material' : 'Game drawn';
+  const pa = (c) => g.players[c] && g.players[c].analysis && g.players[c].analysis.accuracy;
+  const acc = { white: pa('white'), black: pa('black') };
+  return {
+    platform: 'lichess',
+    url: 'https://lichess.org/' + g.id,
+    pgn: g.pgn,
+    time_class: LICHESS_SPEED[g.speed] || g.speed,
+    time_control: g.clock ? `${g.clock.initial}+${g.clock.increment}` : `1/${(g.daysPerTurn || 1) * 86400}`,
+    end_time: Math.round((g.lastMoveAt || g.createdAt) / 1000),
+    white,
+    black,
+    openingName: g.opening ? g.opening.name : '',
+    termination,
+    accuracies: acc.white != null || acc.black != null ? acc : null,
+  };
+}
+
+function renderLichessProfile(user) {
+  const perfs = user.perfs || {};
+  const ratings = ['bullet', 'blitz', 'rapid', 'classical', 'correspondence']
+    .filter((k) => perfs[k] && perfs[k].games)
+    .map((k) => `<span class="rating">${TIME_CLASS[LICHESS_SPEED[k]] || k} <b>${perfs[k].rating}${perfs[k].prov ? '?' : ''}</b></span>`)
+    .join('');
+  $('profile').innerHTML = `<div><h2>${escapeHtml(user.username)} <span class="muted small">· Lichess</span></h2><div class="ratings">${ratings}</div></div>`;
+}
 
 async function renderProfile(username) {
   $('profile').innerHTML = `<div><h2>${escapeHtml(username)}</h2></div>`;
@@ -109,6 +239,7 @@ function outcomeFor(g, username) {
 }
 
 function openingName(g) {
+  if (g.openingName != null) return g.openingName;
   const slug = ((g.eco || '').split('/openings/')[1] || '').split('...')[0];
   if (!slug) return '';
   const words = [];
@@ -189,6 +320,8 @@ async function openGame(raw, { keepView = false } = {}) {
   game.opening = openingName(raw);
   game.myColor = raw.white.username.toLowerCase() === state.username ? 'w' : 'b';
   game.outcome = outcomeFor(raw, state.username);
+  // o PGN do Lichess só diz "Normal"/"Time forfeit"; usamos a descrição montada a partir do status
+  if (raw.termination) game.headers.Termination = raw.termination;
   state.game = game;
   if (!keepView) {
     state.ply = 0;
@@ -197,6 +330,7 @@ async function openGame(raw, { keepView = false } = {}) {
   }
 
   $('gameLink').href = raw.url;
+  $('gameLink').textContent = `ver no ${SITE[raw.platform || 'chesscom']} ↗`;
   $('summaryTab').innerHTML = '';
   $('movesTab').innerHTML = '';
   $('moveInfo').hidden = true;
@@ -455,10 +589,11 @@ function renderTimeline(container) {
 }
 
 // ---------------- resumo ----------------
-// Precisão oficial do chess.com, quando a partida já foi revisada lá (vem na API)
+// Precisão oficial do site, quando a partida já foi revisada lá (vem na API)
 function officialAcc(side) {
-  const a = state.game.raw.accuracies && state.game.raw.accuracies[side];
-  return a != null ? ` · chess.com ${a.toFixed(1)}` : '';
+  const raw = state.game.raw;
+  const a = raw.accuracies && raw.accuracies[side];
+  return a != null ? ` · ${SITE[raw.platform || 'chesscom']} ${Number(a).toFixed(1)}` : '';
 }
 
 function ratingBlock(summary, realElo) {
@@ -567,8 +702,11 @@ for (const id of ['depthSel', 'engineSel', 'animSel']) {
   });
 }
 
-// pré-preenche o último usuário
+// pré-preenche o último site e usuário (lastUser é a chave antiga, só do chess.com)
 try {
-  const last = localStorage.getItem('lastUser');
-  if (last) $('userInput').value = last;
-} catch {}
+  if (!localStorage.getItem('lastUser:chesscom') && localStorage.getItem('lastUser'))
+    localStorage.setItem('lastUser:chesscom', localStorage.getItem('lastUser'));
+  setPlatform(localStorage.getItem('lastPlatform') === 'lichess' ? 'lichess' : 'chesscom');
+} catch {
+  setPlatform('chesscom');
+}
