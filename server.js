@@ -45,7 +45,7 @@ async function proxy(res, url, site, accept = 'application/json') {
   }
 }
 
-http.createServer((req, res) => {
+function handle(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const urlPath = decodeURIComponent(url.pathname);
 
@@ -80,6 +80,24 @@ http.createServer((req, res) => {
     });
     res.end(data);
   });
-}).listen(PORT, () => {
-  console.log(`Chess Analysis rodando em http://localhost:${PORT}`);
-});
+}
+
+// Sobe o servidor e resolve com a porta em uso (o app de desktop usa esta função)
+function start(port = PORT, host) {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer(handle);
+    server.once('error', reject);
+    server.listen(port, host, () => resolve(server.address().port));
+  });
+}
+
+module.exports = { start };
+
+if (require.main === module) {
+  start()
+    .then((port) => console.log(`Chess Analysis rodando em http://localhost:${port}`))
+    .catch((e) => {
+      console.error(e.code === 'EADDRINUSE' ? `A porta ${PORT} já está em uso (o servidor já está aberto?).` : e);
+      process.exit(1);
+    });
+}

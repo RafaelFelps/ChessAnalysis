@@ -1,12 +1,16 @@
 {
   "name": "chess-analysis",
+  "productName": "Análise de Partidas",
   "version": "1.0.0",
-  "description": "Análise de partidas do chess.com com Stockfish",
+  "description": "Análise de partidas do chess.com e do Lichess com Stockfish",
+  "author": "Rafael Felipe da Silva",
+  "main": "electron/main.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "app": "electron .",
+    "dist": "electron-builder --win"
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -14,5 +18,65 @@
     "stockfish": "^17.1.0",
     "stockfish19": "npm:stockfish@^19.0.1"
   },
-  "private": true
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "private": true,
+  "build": {
+    "appId": "com.rafaelfelps.chessanalysis",
+    "productName": "Análise de Partidas",
+    "executableName": "AnaliseDePartidas",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "server.js",
+      "electron/**",
+      "public/**",
+      "package.json",
+      "!node_modules/**/*",
+      "node_modules/chess.js/package.json",
+      "node_modules/chess.js/dist/esm/**",
+      "node_modules/stockfish/package.json",
+      "node_modules/stockfish/src/stockfish-17.1-single-*",
+      "node_modules/stockfish/src/stockfish-17.1-lite-single-*",
+      "node_modules/stockfish19/package.json",
+      "node_modules/stockfish19/bin/stockfish-19.js",
+      "node_modules/stockfish19/bin/stockfish-19.wasm",
+      "node_modules/stockfish19/bin/stockfish-19-single.*",
+      "node_modules/stockfish19/bin/stockfish-19-lite-single.*"
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "win": {
+      "icon": "electron/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Análise de Partidas",
+      "artifactName": "AnaliseDePartidas-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "AnaliseDePartidas-Portatil-${version}.${ext}"
+    }
+  }
 }

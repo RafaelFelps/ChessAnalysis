@@ -4,6 +4,23 @@ Ferramenta local para analisar suas partidas do chess.com ou do Lichess lance a 
 
 ## Como usar
 
+### App para Windows
+
+Instale com `AnaliseDePartidas-Setup-<versão>.exe` (cria atalho na área de trabalho e no menu Iniciar) ou use `AnaliseDePartidas-Portatil-<versão>.exe`, que roda sem instalar. Os dois ficam na pasta `dist/` depois de gerar o build.
+
+> O executável não é assinado, então o Windows pode mostrar "O Windows protegeu o computador". Clique em **Mais informações → Executar assim mesmo**.
+
+Para gerar os executáveis:
+
+```bash
+npm.cmd install
+npm.cmd run dist
+```
+
+Para abrir o app sem gerar o instalador: `npm.cmd run app`. Dentro do app, F12 abre as ferramentas de desenvolvedor e F5 recarrega.
+
+### No navegador
+
 Dê dois cliques em `iniciar.bat` (instala as dependências na primeira vez, sobe o servidor e abre o navegador).
 
 Ou pelo terminal:
@@ -14,7 +31,7 @@ node server.js
 
 > No PowerShell, `npm start` pode falhar com "running scripts is disabled on this system". Use `npm.cmd start` ou `node server.js`.
 
-Abra http://localhost:5173, escolha o site (chess.com ou Lichess), digite seu nick, escolha a partida e aguarde a análise.
+Abra http://localhost:5173. No app ou no navegador, escolha o site (chess.com ou Lichess), digite seu nick, escolha a partida e aguarde a análise.
 
 ## O que ela faz
 
